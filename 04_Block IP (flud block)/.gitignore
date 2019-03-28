@@ -1,0 +1,7 @@
+.idea/
+
+*.zip
+*.rar
+*.log
+blackList.json
+blockFlood.json
