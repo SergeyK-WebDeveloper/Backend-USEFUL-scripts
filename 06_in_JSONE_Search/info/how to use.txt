@@ -1,0 +1,14 @@
+					include $_SERVER['DOCUMENT_ROOT']."/libs_cstm/vendor/autoload.php";
+					$jsonQ = new Nahid\JsonQ\Jsonq();
+					$jsonQ->json($curl_response_json);
+			 	
+					$result = $jsonQ->from('currencies')
+												 ->where('id', '=', $currency_id )
+												 ->first()->name;
+												 //->get(); // вывести selected_json's					
+							//var_export($result);
+						    //$currency_name = intval($result);
+							
+							$result = str_replace(["USD", "UAH", "EUR"], ["$", "₴", "€"], $result);
+							
+							return  $result;
