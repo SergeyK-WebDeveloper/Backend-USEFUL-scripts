@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+  <html>
+  <head>
+  <meta charset="utf-8">
+ <link href="css/style.css" rel="stylesheet"> 
+ <link href="css/upload.css" rel="stylesheet"> 
+ 
+
+
+
+<script src="js/jquery-1.11.2.min.js"></script>
+<script src="js/core.js"></script>
+<script src="js/upload.js"></script>
+
+
+
+
+
+  </head>
+  
+  <body>
+  
+<style>
+.fs-upload-target {
+
+	height:200px;
+}
+.fs-upload.fs-upload-dropping .fs-upload-target {
+	border-color:green;
+}	
+progress {
+    border:0;
+	width: 50%;
+	height: 20px;
+	border-radius: 5px;
+	background: #f1f1f1;
+}
+progress::-webkit-progress-bar {
+	width: 300px;
+	height: 20px;
+	border-radius: 5px;
+	background: #f1f1f1;
+}
+
+progress::-moz-progress-bar {
+    border-radius: 5px;
+	background: #35b545;
+}
+li.upload_error progress::-moz-progress-bar{
+	background: #ff0000 !important;
+}
+li.upload_error {
+	color:#ff0000
+}
+
+li {
+    list-style-image: none;
+    list-style-position: outside;
+    list-style-type: none;
+    margin-bottom: 10px;
+    margin-left: 0;
+    margin-right: 0;
+    margin-top: 10px;
+    text-align: left;
+    width: 100%;
+}
+.file {
+	display: block;
+    float: left;
+    width: 20%;
+}
+.progress {
+    display: block;
+    float: right;
+    text-align: right;
+    width: 30%;
+}
+.upload_ok {
+	color:green;
+}
+</style>
+
+<script>
+	jQuery('document').ready(function($) {
+		$('.upload').upload({
+			action:'obr.php',
+			label:'Перетащите файл в блок загрузки',
+			postKey:'newfile',
+			maxQueue:1,
+			maxSize:10485760,
+			/*postData:{
+				name:'User',
+				ip:'127.0.0.1'
+			}*/
+		})
+		.on("start.upload", Start)
+		.on("filestart.upload", fileStart)
+		.on("fileprogress.upload", fileProgress)
+		.on("filecomplete.upload", filePComplelele)
+		.on("fileerror.upload", fileError)
+		.on("complete.upload", Complete)
+		
+		
+		;
+	});
+	
+	function Start (e, files) {
+		
+		console.log('Start');
+		var html = '';
+		for(var i=0; i < files.length; i++) {
+			if(files[i].size > 10485760) {
+				alert('Size');
+			}
+			html +='<li data-index="' + files[i].index + '"><span class="file">' + files[i].name + '</span><progress value="0" max="100"></progress><span class="progress"></span></li>'
+		}
+		$("#res").append(html);
+	}
+	
+	function fileStart(e, file) {
+		
+		console.log('FIle Start');
+		$("#res").find('li[data-index='+file.index+']').find('.progress').text('0%');
+	}
+	
+	function fileProgress(e, file, percent) {
+		
+		console.log('FIle Progress');
+		$("#res")
+			.find('li[data-index='+file.index+']')
+			.find('progress').attr('value',percent)
+			.next().text(percent + '%');
+		
+	}
+	
+	function filePComplelele (e, file, response) {
+		console.log('FIle Complete');
+		if(response == '' || response.toLowerCase() == 'error') {
+			
+			$("#res").find('li[data-index='+file.index+']').addClass('upload_error').find('.progress').text('Ошибка загрузки');
+		}
+		else {
+			$("#res").find('li[data-index='+file.index+']').addClass('upload_ok').find('.progress').text('Загружено');
+		}
+	}
+	
+	function fileError (e, file) {
+		
+		console.log('Error');
+		$("#res").find('li[data-index='+file.index+']').addClass('upload_error').find('.progress').text('Файл не поддерживается');
+	}
+	
+	function Complete(e) {console.log('Complete');}
+	
+	
+	
+	
+</script>
+
+<div class="wrap" style="background-color:#ffffff;padding:30px;">
+
+<h1>Пример Upload!!!</h1>
+
+	<div class="upload"></div>
+
+	
+	<div id="res"></div>
+</div>
+</body></html>
