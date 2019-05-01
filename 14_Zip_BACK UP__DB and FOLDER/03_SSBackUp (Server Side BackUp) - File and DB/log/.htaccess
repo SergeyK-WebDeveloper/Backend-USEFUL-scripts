@@ -1,0 +1,3 @@
+<FilesMatch "\.(?i:sqlite|db)$">
+  Require all denied
+</FilesMatch>
