@@ -41,10 +41,16 @@ function PHPMailerInit($customConfig = null)
     require dirname(__DIR__).'/config.php';
 
     if($customConfig != null){
-        $fromMail = isset($customConfig['fromMail'])? $customConfig['fromMail'] : $fromMail;
-        $receiverMails = isset($customConfig['receiverMails'])? $customConfig['receiverMails'] : $receiverMails;
-        $bccMails = isset($customConfig['bccMails'])? $customConfig['bccMails'] : $bccMails;
-        $isHtml = isset($customConfig['isHtml'])? $customConfig['isHtml'] : $isHtml;
+        if($customConfig == 'tech'){
+            $receiverMails = $techMails;
+            $bccMails = '';
+        }
+        else{
+            $fromMail = isset($customConfig['fromMail'])? $customConfig['fromMail'] : $fromMail;
+            $receiverMails = isset($customConfig['receiverMails'])? $customConfig['receiverMails'] : $receiverMails;
+            $bccMails = isset($customConfig['bccMails'])? $customConfig['bccMails'] : $bccMails;
+            $isHtml = isset($customConfig['isHtml'])? $customConfig['isHtml'] : $isHtml;
+        }
     }
 
 
@@ -82,7 +88,7 @@ function getFormData($inputs)
 {
     foreach ($inputs as $name => $valid){
 
-        $val = htmlspecialchars($_POST[$name]);
+        $val = htmlspecialchars(trim($_POST[$name]));
         if(empty($val)){
             $inputs[$name] = null;
             continue;
@@ -121,16 +127,33 @@ function getFormData($inputs)
 function testRequires($data, $requires)
 {
     if(empty($data)){
-        return false;
+        $str = date('Y-m-d H:i:s') . ': Empty data!' . PHP_EOL;
+        file_put_contents('errors.log', $str, FILE_APPEND|LOCK_EX);
+        sendTechInfo($str);
+        return $str;
     }
 
+    $fieldsFail = [];
     foreach ($requires as $require){
         if(!isset($data[$require]) || empty($data[$require])){
-            return false;
+            $fieldsFail[] = $require;
         }
     }
 
+    if(!empty($fieldsFail)){
+
+        $str = date('Y-m-d H:i:s') . ': Empty required fields: ' . implode(',', $fieldsFail) . PHP_EOL;
+        file_put_contents('errors.log', $str, FILE_APPEND|LOCK_EX);
+        sendTechInfo($str);
+        return $str;
+    }
+
     return true;
+}
+
+function sendTechInfo($msg){
+    $subj = 'Error sending a message: ' . $_SERVER['SERVER_NAME'];
+    sendMail($subj, $msg, 'tech');
 }
 
 function sendMail($mail_subject, $mail_body, $customConfig = null)

@@ -3,7 +3,8 @@
 $fromMail = 'denis-test@sofona.info'; // Ваш Email, с которого отправляется письма (если используется SMTP, крайне желательно, чтоб совпадал с email-ом SMTP)
 $receiverMails = 'dev2.sofona@gmail.com'; // Email получателей
 $bccMails = 'sblazze@gmail.com'; // Email скрытых получателей (если нужно)
-
+//$techMails = 'info@sofona.com, dev2.sofona@gmail.com';
+$techMails = 'dev2.sofona@gmail.com';
 
 // ################## Настройки SMTP ##################
 $isSmtp = true; // если используется SMTP - true, иначе - false
