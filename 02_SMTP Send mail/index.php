@@ -72,6 +72,10 @@
 
       display: none;
     }
+
+    .uForm__hidden {
+      display: none;
+    }
   </style>
 </head>
 <body>
@@ -110,9 +114,9 @@
 
   <input id="uForm__hidden" name="hidden" type="hidden">
 
-  <!-- File -->
-  <input id="uForm__file" name="file" type="file">
-  <!-- Reset -->
+  <input id="uForm__file" name="uForm_file" type="file" accept=".txt,image/*">
+  <input id="uForm__files" name="uForm_files[]" multiple type="file" accept=".txt,image/*">
+
   <input id="uForm__reset" type="reset" value="Reset" style="display: none;">
 
   <span>
@@ -121,6 +125,7 @@
     </label>
   </span>
 
+  <input class="uForm__hidden" name="nospam" type="text" value="uform-empty" required>
   <input id="uForm__submit" name="submit" type="submit">
 
   <p id="uForm__error-msg"></p>

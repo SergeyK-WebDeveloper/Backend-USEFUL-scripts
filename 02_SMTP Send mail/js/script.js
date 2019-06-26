@@ -1,8 +1,8 @@
-// method of notification after sending
-let handlerType = 'modal' || 'message';
+let showLog = !1;
 
+// method of notification after sending ('message' or 'modal')
+let handlerType = 'message';
 let uFormFilePath = '/uForm/';
-
 // message about the result of sending
 let failMessage = 'Что-то пошло не так... Повтоите немного позже';
 let successMessage = 'Запрос успешно отправлен';
@@ -16,26 +16,33 @@ const uForms = {
     refix: '',
     validation: {
       uForm__name: {
-        1: [validLen, 2, 50],
+        validLen: [2, 50]
       },
       uForm__password: {
-        1: [validLen, 6, 50],
+        validLen: [6, 50]
       },
       uForm__email: {
-        1: validEmail,
+        validEmail
       },
       uForm__tel: {
-        1: validTel,
+        validTel
       },
       'uForm__text-area': {
-        1: [validLen, 5, 250],
+        validLen: [5, 250]
       },
+      'uForm__file': {
+        validSizeOneFile: [150] // KB - default
+      },
+      'uForm__files': {
+        validCountFiles: [3],
+        validSizeAllFiles: [2, 'МБ'] // KB - default
+      }
     }
   },
 };
 
 //--------------------------------------------------------
-// validation functions --------------------------------
+// validation functions ----------------------------------
 //--------------------------------------------------------
 function validTel(item, empty = true) {
   if(empty && item.value.length == 0)
@@ -79,6 +86,72 @@ function validLen(item, min, max, empty = true) {
   return (errMsg == '')? true : errMsg;
 }
 
+function validSizeOneFile(item, sizeLimit, unit = 'КБ') {
+  let file;
+  let limitByte;
+  let errMsg = '';
+
+  switch(unit){
+    case 'МБ':
+      limitByte = sizeLimit* 1024 * 1024;
+      break;
+    case 'Б':
+      limitByte = sizeLimit;
+      break;
+    default:
+      unit = 'КБ';
+      limitByte = sizeLimit * 1024;
+  }
+
+  if(file = item.files[0]){
+    if(file.size > limitByte){
+      errMsg = 'превышен допустимый лимит размера файла: '+ sizeLimit +' '+ unit;
+    }
+  }
+
+  return (errMsg == '')? true : errMsg;
+}
+
+function validSizeAllFiles(item, sizeLimit, unit = 'КБ') {
+  let files = item.files;
+  let fullSize = 0;
+  let limitByte;
+  let errMsg = '';
+
+  switch(unit){
+    case 'МБ':
+      limitByte = sizeLimit* 1024 * 1024;
+      break;
+    case 'Б':
+      limitByte = sizeLimit;
+      break;
+    default:
+      unit = 'КБ';
+      limitByte = sizeLimit * 1024;
+  }
+
+  if(files){
+    for (let i = 0; i < files.length; i++) {
+      fullSize += files[i].size;
+    }
+
+    if(fullSize > limitByte){
+      errMsg = 'превышен допустимый лимит общего размера файлов: '+ sizeLimit +' '+ unit;
+    }
+  }
+  return (errMsg == '')? true : errMsg;
+}
+
+function validCountFiles(item, maxCount) {
+  let files = item.files;
+  let errMsg = '';
+
+  if(files && files.length > maxCount){
+    errMsg = 'допускается загрузка файлов: '+ maxCount;
+  }
+  return (errMsg == '')? true : errMsg;
+}
+
 function validationForm(instance) {
   let valid = true;
 
@@ -86,7 +159,6 @@ function validationForm(instance) {
     let testInput = document.getElementById(inp);
     jQuery(testInput).blur();
     if (testInput.uFormValid !== undefined && testInput.uFormValid == false) {
-//        addErrorWarning(testInput, '');
       valid = false;
     }
   }
@@ -112,10 +184,9 @@ function addErrorWarning(instance, msg){
 }
 
 function printError(uFormPrefix, msg) {
-  console.log(uFormPrefix);
-  console.log(msg);
   let uFormErr = jQuery('#uForm__error-msg'+ uFormPrefix);
-  console.log(uFormErr);
+  if(showLog) { console.log('uFormPrefix, msg, uFormErr'); console.log(uFormPrefix); console.log(msg); console.log(uFormErr); }
+
   uFormErr.show();
   uFormErr.append('<p></p>');
   jQuery('#uForm__error-msg'+ uFormPrefix +' > p:last-child').text('*' + msg);
@@ -123,7 +194,7 @@ function printError(uFormPrefix, msg) {
   setTimeout(function () {
     jQuery('#uForm__error-msg'+ uFormPrefix).hide();
     jQuery('#uForm__error-msg'+ uFormPrefix +' > p').text('');
-  }, 5000);
+  }, 7000);
 }
 
 // change the message text
@@ -194,8 +265,7 @@ function initJQ(mt) {
         for (let uFormId in uForms) {
           let formInstance = $('#'+uFormId);
 
-          console.log(uFormId);
-          console.log(formInstance[0]);
+          if(showLog){ console.log('uFormId, formInstance[0]'); console.log(uFormId); console.log(formInstance[0]); }
 
           formInstance[0].uFormHandlerType = (uForms[uFormId].handlerType)? uForms[uFormId].handlerType : handlerType;
           formInstance[0].uFormFailMsg = (uForms[uFormId].failMessage)? uForms[uFormId].failMessage : failMessage;
@@ -215,7 +285,10 @@ function initJQ(mt) {
               showResult(this, 'Некоторые поля заполненные не корректно');
               return;
             }
+
+
             let formData = new FormData(this);
+            formData.append('uFormUrl', window.location.href);
 
             let smform = this;
             if (window.smetrics) {
@@ -229,7 +302,7 @@ function initJQ(mt) {
                 }
               }
             } else {
-              //              console.log('~700');
+//              console.log('~700');
             }
 
             $.ajax({
@@ -243,9 +316,14 @@ function initJQ(mt) {
                   showResult(smform, false);
                 },
                 200: function (data) {
-                  showResult(smform, true);
-                  console.log(data);
-                  $('#uForm__reset' + this.uFormPrefix).click();
+                  let answer = JSON.parse(data);
+                  if(answer.success){
+                    showResult(smform, true);
+                    $('#uForm__reset' + smform.uFormPrefix).click();
+                  } else {
+                    showResult(smform, false);
+                    console.log(answer.info);
+                  }
                 }
               }
             })
@@ -254,9 +332,7 @@ function initJQ(mt) {
 
         // the result of sending
         function showResult(instance, status) {
-          console.log(instance);
-          console.log(status);
-          console.log(instance.uFormHandlerType );
+          if(showLog) { console.log('showResult: instance, status, instance.uFormHandlerType'); console.log(instance); console.log(status); console.log(instance.uFormHandlerType); }
 
           if (instance.uFormHandlerType === 'modal') {
             changeMessageText(instance, status);
@@ -269,12 +345,11 @@ function initJQ(mt) {
 
         // adding validators
         for (let uFormId in uForms) {
-          console.log('uFormId: ' + uFormId);
-//            console.log(document.getElementById(uFormId));
+          if(showLog) console.log('uFormId: ' + uFormId);
 
           let testForm = uForms[uFormId].validation;
           for (let uInput in testForm) {
-            console.log('uInput: ' + uInput);
+            if(showLog) console.log('uInput: ' + uInput);
 
             let curInput = testForm[uInput];
             let testInput = $('#' + uInput);
@@ -283,20 +358,20 @@ function initJQ(mt) {
               continue;
 
             for (let validFuncName in curInput) {
-              console.log('validFuncName: ' + validFuncName);
+              if(showLog) console.log('validFuncName: ' + validFuncName);
 
               let validFunc = curInput[validFuncName];
               if (Array.isArray(validFunc)) {
-                console.log('arr: ');
+                if(showLog) console.log('func arr: ');
                 $(testInput[0]).on('blur', function (e) {
-                  let result = validFunc[0](testInput[0], validFunc[1], validFunc[2], validFunc[3], validFunc[4], validFunc[5]);
+                  let result = eval( validFuncName + '(testInput[0], validFunc[0], validFunc[1], validFunc[2], validFunc[3], validFunc[4]);');
 
                   if (result !== true) {
                     addErrorWarning(this, result);
                   }
                 });
               } else {
-                console.log('this is function: ');
+                if(showLog) console.log('this is function: ');
                 $(testInput[0]).on('blur', function (e) {
                   let result = validFunc(testInput[0]);
 

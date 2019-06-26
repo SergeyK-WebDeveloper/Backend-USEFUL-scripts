@@ -1,85 +1,183 @@
 <?php
-require 'phpmailer/helperPHPMailer.php';
+use uForm\classes\uForm;
 
-ob_start();
-var_dump($_POST);
-var_dump($_FILES);
-$str = ob_get_clean();
-file_put_contents('dump.log', $str);
-
-echo $str;
-die;
+require 'classes/uForm.php';
 
 // ################## получаемые данные от формы ##################
 //
-// настройка валидации данных из формы
+if(0) uForm::saveDumpDataForm(); // при необходимости можно сохранить дамп присылаемых данных из формы ($_POST, $_FILES)
+
+
+// НАСТРОЙКА ВАЛИДАЦИИ ДАННЫХ ИЗ ФОРМЫ
 $inputs = [
-    'name' => ['lenStr', 2, 50, false], // lenStr - название проверочной функции, 2 и 50 - аргументы передаваемые в функцию (мин и макс кол символов), true - обризать лишний текст (иначе удаляет все содержимое)
-    'password' => ['lenStr', 6, 50, false],
-    'email' => 'isMail',
-    'tel' => 'isPhone',
-    'date' => ['isDate', 'Y-m-d'],
+    'name' => ['lenStr' => [2, 50, false]], // lenStr - название проверочной функции, 2 и 50 - аргументы передаваемые в функцию (мин и макс символов), true - обризать лишний текст (иначе удаляет все содержимое)
+    'password' => ['lenStr' => [6, 50, false]],
+    'email' => 'isMail', // стандартная PHP фильтр FILTER_VALIDATE_EMAIL
+    'tel' => 'isPhone', // очищает телефон от лишних символов и проверяет на количество цифер (7 - 25)
+    'date' => ['isDate' => ['SQL']], // ожидаемый формат даты. Доступны: 'SQL' - преобразует любой формат к тику 'Y-m-d H:i:s'; 'TIMESTAMP' - возвращает количество секунд, прошедших с начала эпохи Unix; 'ANY' - проверяет дату и в случае успеха, возвращает в таком формате как и пришло
     'select' => '',
     'multiselect' => '',
-    'text-area' => ['lenStr', 5, 250, true],
+    'text-area' => ['lenStr' => [5, 250, true]], // minLen, maxLen, ture - удалять все что превышает длину/false - возвращать как ошибку
     'checkbox-1' => '',
     'checkbox-2' => '',
     'radio-btn' => '',
 ];
 
-$requires = ['name', 'number', 'email'];
+
+// СПИСОК ОБЯЗАТЕЛЬНЫХ ПОЛЕЙ (файлы не проверяются)
+$requires = ['name', 'tel', 'email'];
 
 
+// НАСТРОЙКА ВАЛИДАЦИИ ЗАГРУЖЕННЫХ ФАЙЛОВ
+$files = [
+    'uForm_file' => ['maxSizeOneFile' => [250]], // максимальный вес файла в KB
+    'uForm_files' => [
+        'countFiles' => [3], // максимальное количество файлов
+        'maxSizeAllFile' => [2048], // максимальный общий вес всех файлов в KB (2048 = 2 МБ * 1024)
+//        'typeFile' => ['image/jpeg', 'text/plain'] // будет реализованно при первой необходимости. Список всех типов файлов: https://en.wikipedia.org/wiki/Media_type
+    ]
+];
 
 
-// получение всех полей указанных в $inputs
-$formData = getFormData($inputs);
-// проверка обязательных полей $requires
-$requireResult = testRequires($formData, $requires);
-
-//if(!$requireResult){
-//    echo 'error - required';
-//    die;
-//}
-
-
-echo "<pre>";
-var_dump($formData);
-echo "</pre>";
-//var_dump($formData);
-
-
-
-
-
-
-
-
-$name = 'ASD4';
-$number = '11123123';
-$email = 'asd@asd.asd';
-
-
-// ################## формирования письма ##################
+// -----------------------------------------------------------------------------------
+// ############################### ФОРМИРОВАНИЯ ПИСЬМА ###############################
 //
-// тема письма
+$uform = null;
+$formData = getFormData($inputs, $files, $requires, $uform);
+
+
+// ТЕМА ПИСЬМА
 $mail_subject = 'Заголовок письма';
 
-// текст письма
-$mail_body =  "<b>Имя $name . Телефон $number . Почта $email </b>";
+
+// ТЕКСТ ПИСЬМА (тут формируем тело письма, на свое усмотрение)
+// $formData - полученные данные их формы в формате ['name1' => 'value1', 'name2' => 'value2']
+
+$mail_body = '';
+
+foreach ($inputs as $name => $val){
+    $mail_body .= '<b>'.$name.'</b>: ';
+    $mail_body .= !empty( $formData[$name] )? $formData[$name] : 'empty';
+    $mail_body .= '<br>';
+}
+
+
+/**
+ * ⇧⇑⇡⇑⇧⇑⇡⇑⇧⇑⇡⇑⇧⇑⇡⇑⇧⇑⇡⇑⇧⇑⇡⇑⇧⇑⇡⇑⇧⇑⇡⇑⇧⇑⇡⇑⇧⇑⇡⇑⇧⇑⇡⇑⇧⇑⇡⇑⇧⇑⇡⇑⇧⇑⇡⇑⇧⇑⇡⇑⇧⇑⇡⇑⇧⇑⇡⇑⇧⇑⇡⇑⇧⇑⇡⇑⇧⇑⇡⇑⇧⇑⇡
+ * #################################### НИЖЕ НИЧЕГО МЕНЯТЬ НЕ СТОИТ ####################################
+ *
+*/
 
 
 
 
-$result = sendMail($mail_subject, $mail_body);
 
 
 
-// если необходимо задать особые настройки для отправки. Все поля не обязательны. Можно переопределить любое из значений в примере ниже
-//$customConfig = [
-//    'fromMail' => 'denis-test@sofona.info', // Ваш Email, с которого отправляется письма (если используется SMTP, крайне желательно, чтоб совпадал с email-ом SMTP)
-//    'receiverMails' => 'dev2.sofona@gmail.com', // Email получателей
-//    'bccMails' => 'sblazze@gmail.com', // Email скрытых получателей (если нужно)
-//    'isHtml' => true // текст письма оформлен при помощи HTML тегов - true | обычный текст - false
-//];
-//$result = sendMail($mail_subject, $mail_body, $customConfig);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/**
+ * ⇧⇑⇡⇑⇧⇑⇡⇑⇧⇑⇡⇑⇧⇑⇡⇑⇧⇑⇡⇑⇧⇑⇡⇑⇧⇑⇡⇑⇧⇑⇡⇑⇧⇑⇡⇑⇧⇑⇡⇑⇧⇑⇡⇑⇧⇑⇡⇑⇧⇑⇡⇑⇧⇑⇡⇑⇧⇑⇡⇑⇧⇑⇡⇑⇧⇑⇡⇑⇧⇑⇡⇑⇧⇑⇡⇑⇧⇑⇡⇑⇧⇑⇡
+ * ########################## Я ЖЕ ПРОСИЛ!  НЕ ДЕЛАЙ ЭТОГО!!!  ТВОЙ КОД ВЫШЕ! ##########################
+ * ########################## Я ЖЕ ПРОСИЛ!  НЕ ДЕЛАЙ ЭТОГО!!!  ТВОЙ КОД ВЫШЕ! ##########################
+ * ########################## Я ЖЕ ПРОСИЛ!  НЕ ДЕЛАЙ ЭТОГО!!!  ТВОЙ КОД ВЫШЕ! ##########################
+ * ⇧⇑⇡⇑⇧⇑⇡⇑⇧⇑⇡⇑⇧⇑⇡⇑⇧⇑⇡⇑⇧⇑⇡⇑⇧⇑⇡⇑⇧⇑⇡⇑⇧⇑⇡⇑⇧⇑⇡⇑⇧⇑⇡⇑⇧⇑⇡⇑⇧⇑⇡⇑⇧⇑⇡⇑⇧⇑⇡⇑⇧⇑⇡⇑⇧⇑⇡⇑⇧⇑⇡⇑⇧⇑⇡⇑⇧⇑⇡⇑⇧⇑⇡
+*/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// КОД - КОТОРЫЙ ЛУЧШЕ НЕ ТРОГАТЬ...
+// P.S. И так же все работает :(
+//
+if(empty($uform)){
+    echo json_encode(['success' => false, 'error' => 'create uForm failed']);
+    die;
+}
+/** @var uForm $uform */
+$result = $uform->sendMail($mail_subject, $mail_body);
+//$answer = ['success' => true];
+$answerForAJAX = ['success' => $result[0], 'info' => $result[1]];
+echo json_encode($answerForAJAX);
+
+
+function getFormData($inputs, $files, $requires, &$uform)
+{
+    $uform = new uForm();
+    // получение всех полей указанных в $inputs
+    $formData = $uform->getPostData($inputs);
+    if(empty($formData)) {
+        $answer = ['success' => false, 'info' => 'empty data'];
+        echo json_encode($answer);
+        die;
+    }
+    elseif($formData == 'ISBOT'){
+        $answer = ['success' => false, 'info' => 'isbot'];
+        echo json_encode($answer);
+        die;
+    }
+    // провека и получение файлов
+    $uform->getLoadFiles($files);
+
+    // проверка обязательных полей $requires
+    $requireResult = $uform->testRequires($requires);
+    if($requireResult !== true){
+        $answer = ['success' => false, 'info' => 'empty required input', 'data' => $requireResult];
+        echo json_encode($answer);
+        die;
+    }
+
+    return $formData;
+}
