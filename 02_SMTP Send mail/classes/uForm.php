@@ -231,7 +231,16 @@ class uForm
                 return 'ISBOT';
             }
 
-            $val = htmlspecialchars(trim($_POST[$name]));
+            if(is_array($_POST[$name])){
+                $val = [];
+                foreach($_POST[$name] as $one){
+                    $val[] = htmlspecialchars(trim($one));
+                }
+            }
+            else{
+                $val = htmlspecialchars(trim($_POST[$name]));
+            }
+
             if(empty($val)){
                 $this->data[$name] = null;
                 continue;
