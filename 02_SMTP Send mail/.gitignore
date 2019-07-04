@@ -3,3 +3,7 @@
 dump.log
 test.php
 error.log
+statistic.log
+
+*.zip
+*.rar

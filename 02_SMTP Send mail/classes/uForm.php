@@ -8,6 +8,7 @@ require 'customPHPMailer.php';
 class uForm
 {
     public static $fileLog;
+    public static $fileErrorLog;
     public static $log;
     public static $errorLog;
 
@@ -25,7 +26,8 @@ class uForm
         $this->SMTPSecure = 'ssl';
         $this->Port = 465;
 
-        self::$fileLog = dirname(__DIR__) . DIRECTORY_SEPARATOR. 'error.log';
+        self::$fileLog = dirname(__DIR__) . DIRECTORY_SEPARATOR. 'statistic.log';
+        self::$fileErrorLog = dirname(__DIR__) . DIRECTORY_SEPARATOR. 'error.log';
         $this->mail = $this->PHPMailerInit($customConfig);
         $this->uFormUrl = isset($_POST['uFormUrl'])? $_POST['uFormUrl'] : null;
 
@@ -62,7 +64,7 @@ class uForm
             if($cut){
                 return substr($item, 0, $max);
             }
-             return null;
+            return null;
         }
 
         return $item;
@@ -94,7 +96,7 @@ class uForm
         if($n > $option[0]){
             $errorFile = 'Превышен допустимый лимит файлов в одной загрузке. Загруженно: ' . $n;
             self::saveLog($errorFile);
-            self::$errorLog[] = $errorFile;
+            self::saveErrorLog($errorFile);
 
             return [];
         }
@@ -108,7 +110,7 @@ class uForm
             if($files[$i]['size'] > $maxSize){
                 $errorFile = 'Превышен размер файла: ' . $files[$i]['name'] . ' (' . $files[$i]['size'] . ' байта)';
                 self::saveLog($errorFile);
-                self::$errorLog[] = $errorFile;
+                self::saveErrorLog($errorFile);
                 unset($files[$i]);
             }
         }
@@ -126,8 +128,7 @@ class uForm
         if($size > $maxSize){
             $errorFile = 'Превышен общий размер загружаемых файлов: (' . $size . ' байта)';
             self::saveLog($errorFile);
-            self::$errorLog[] = $errorFile;
-
+            self::saveErrorLog($errorFile);
             return [];
         }
         return $files;
@@ -138,6 +139,27 @@ class uForm
         self::$log[] = $str;
         $str = date('Y-m-d H:i:s') . ': ' . $str . PHP_EOL;
         file_put_contents(self::$fileLog, $str, FILE_APPEND|LOCK_EX);
+
+        return $str;
+    }
+
+    public static function saveErrorLog($str, $saveFile = true, $flag = 'last')
+    {
+        if(empty($str)){
+            return '';
+        }
+
+        $str = date('Y-m-d H:i:s') . ': ' . $str . PHP_EOL;
+        self::$errorLog[] = $str;
+
+        switch($flag){
+            case 'all':
+                $str = implode(PHP_EOL, self::$errorLog);
+                break;
+            case 'last':
+                break;
+        }
+        @file_put_contents(self::$fileErrorLog, $str, FILE_APPEND|LOCK_EX);
 
         return $str;
     }
@@ -171,8 +193,11 @@ class uForm
 
         if($customConfig != null){
             if($customConfig == 'tech'){
+                if(!isset($this->config->techMails)){
+                    return false;
+                }
                 $this->config->receiverMails = $this->config->techMails;
-                $this->config->bccMails = [];
+                $this->config->bccMails = '';
             }
             else{
                 if(isset($customConfig['fromMail'])) $this->config->fromMail = $customConfig['fromMail'];
@@ -209,10 +234,12 @@ class uForm
         }
 
         // Email скрытых получателей
-        $bccMailsArr = explode(',', $this->config->bccMails);
+        if(isset($this->config->bccMails)){
+            $bccMailsArr = explode(',', $this->config->bccMails);
 
-        foreach ($bccMailsArr as $mailAddr) {
-            $mail->addBCC(trim($mailAddr));
+            foreach ($bccMailsArr as $mailAddr) {
+                $mail->addBCC(trim($mailAddr));
+            }
         }
 
         $mail->isHTML($this->config->isHtml); // формат письма HTML
@@ -226,9 +253,16 @@ class uForm
 
             if($_POST['nospam'] != 'uform-empty'){
                 $str = $this->saveLog('This is bot! ');
-                self::$errorLog[] = $str;
+                self::saveErrorLog($str);
                 $this->sendTechInfo($str);
                 return 'ISBOT';
+            }
+
+            if(!isset($_POST[$name])){
+                $str = $this->saveLog('Input "'.$name.'" is not exists!');
+                self::saveErrorLog($str);
+                $this->data[$name] = null;
+                continue;
             }
 
             if(is_array($_POST[$name])){
@@ -266,7 +300,7 @@ class uForm
             $postTest = empty($_POST)? 'and POST is empty!' : 'bat POST not empty!';
 
             $str = $this->saveLog('Empty data in getPostData()! ' . $postTest);
-            self::$errorLog[] = $str;
+            self::saveErrorLog($str);
             $this->sendTechInfo($str);
         }
 
@@ -282,27 +316,31 @@ class uForm
             $loadFiles = [];
             if(is_array($_FILES[$inputName]['tmp_name'])) {
                 for ($ct = 0; $ct < count($_FILES[$inputName]['tmp_name']); $ct++) {
-                    $loadFiles[] = [
-                        'name' => $_FILES[$inputName]['name'][$ct],
-                        'type' => $_FILES[$inputName]['type'][$ct],
-                        'tmp_name' => $_FILES[$inputName]['tmp_name'][$ct],
-                        'error' => $_FILES[$inputName]['error'][$ct],
-                        'size' => $_FILES[$inputName]['size'][$ct],
-                    ];
+                    if($_FILES[$inputName]['size'][$ct] > 0) {
+                        $loadFiles[] = [
+                            'name' => $_FILES[$inputName]['name'][$ct],
+                            'type' => $_FILES[$inputName]['type'][$ct],
+                            'tmp_name' => $_FILES[$inputName]['tmp_name'][$ct],
+                            'error' => $_FILES[$inputName]['error'][$ct],
+                            'size' => $_FILES[$inputName]['size'][$ct],
+                        ];
+                    }
                 }
             }
             else{
-                $loadFiles[] = [
-                    'name' => $_FILES[$inputName]['name'],
-                    'type' => $_FILES[$inputName]['type'],
-                    'tmp_name' => $_FILES[$inputName]['tmp_name'],
-                    'error' => $_FILES[$inputName]['error'],
-                    'size' => $_FILES[$inputName]['size'],
-                ];
+                if($_FILES[$inputName]['size'] > 0) {
+                    $loadFiles[] = [
+                        'name' => $_FILES[$inputName]['name'],
+                        'type' => $_FILES[$inputName]['type'],
+                        'tmp_name' => $_FILES[$inputName]['tmp_name'],
+                        'error' => $_FILES[$inputName]['error'],
+                        'size' => $_FILES[$inputName]['size'],
+                    ];
+                }
             }
 
             if(empty($loadFiles)){
-                $this->files[$inputName] = null;
+                $this->files[$inputName] = [];
                 continue;
             }
 
@@ -329,7 +367,7 @@ class uForm
     {
         if(empty($this->data)){
             $str = $this->saveLog('Empty data!');
-            self::$errorLog[] = $str;
+            self::saveErrorLog($str);
             $this->sendTechInfo($str);
             return $str;
         }
@@ -344,7 +382,7 @@ class uForm
         if(!empty($fieldsFail)){
             $errorRequired = 'Empty required fields: ' . implode(', ', $fieldsFail);
             $this->saveLog($errorRequired);
-            self::$errorLog[] = $errorRequired;
+            self::saveErrorLog($errorRequired);
             $this->sendTechInfo($errorRequired);
 
             return $fieldsFail;
@@ -372,6 +410,11 @@ class uForm
     {
         if(!empty($customConfig)){
             $this->mail = $this->PHPMailerInit($customConfig);
+            if(empty($this->mail)){
+                $str = $this->saveLog('Error init PHPMailer: ' . __FILE__ . ':' . __LINE__);
+                self::saveErrorLog($str);
+                return false;
+            }
         }
 
         //################## Прикрепление файлов ##################
@@ -385,7 +428,7 @@ class uForm
                 }
                 else {
                     $str = $this->saveLog('Failed to move file "'. $file['tmp_name'] .'" to ' . $uploadfile);
-                    self::$errorLog[] = $str;
+                    self::saveErrorLog($str);
                     $this->sendTechInfo($str);
                 }
             }
@@ -401,7 +444,7 @@ class uForm
         if(!$this->mail->send()) {
             $resuletSend = false;
             $resultMsg = 'Message could not be sent. Mailer Error: ' . $this->mail->ErrorInfo;
-            self::$errorLog[] = $resultMsg;
+            self::saveErrorLog($resultMsg);
             $this->sendTechInfo($resultMsg);
         } else {
             $resuletSend = true;

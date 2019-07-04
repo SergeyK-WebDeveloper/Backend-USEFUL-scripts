@@ -286,9 +286,9 @@ function initJQ(mt) {
               return;
             }
 
-
             let formData = new FormData(this);
             formData.append('uFormUrl', window.location.href);
+            formData.append('uFormId', this.id);
 
             let smform = this;
             if (window.smetrics) {
@@ -316,6 +316,7 @@ function initJQ(mt) {
                   showResult(smform, false);
                 },
                 200: function (data) {
+                  console.log(data);
                   let answer = JSON.parse(data);
                   if(answer.success){
                     showResult(smform, true);
