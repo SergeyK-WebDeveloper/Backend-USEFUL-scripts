@@ -246,11 +246,11 @@ function toggleModal(uFormPrefix) {
 
 //----------------------------------------------------------
 let jQ = false;
-let mt = (window.MooTools != undefined) ? window.$ : false;
+let mt = (window.MooTools !== undefined) ? window.$ : false;
 initJQ(mt);
 
 function initJQ(mt) {
-  if (typeof(jQuery) == 'undefined') {
+  if (window.jQuery === undefined) {
     if (!jQ) {
       jQ = true;
       document.write('<scr' + 'ipt type="text/javascript" src="'+ uFormFilePath +'js/jquery-3.3.1.min.js"></scr' + 'ipt>');
@@ -353,10 +353,13 @@ function initJQ(mt) {
             if(showLog) console.log('uInput: ' + uInput);
 
             let curInput = testForm[uInput];
-            let testInput = $('#' + uInput);
+            let testInput = $('#'+uFormId + ' #'+uInput);
 
-            if (testInput[0] == 'undefined')
+            if (testInput[0] === undefined){
+              console.log('missing imput: ' + uInput);
+              delete uForms[uFormId].validation.uInput;
               continue;
+            }
 
             for (let validFuncName in curInput) {
               if(showLog) console.log('validFuncName: ' + validFuncName);
