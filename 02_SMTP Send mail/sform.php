@@ -61,17 +61,17 @@ $files = [
 //
 $uform = null;
 $formData = getFormData($inputs, $files, $requires, $uform);
+// $formData - полученные данные их формы в формате ['name1' => 'value1', 'name2' => 'value2']
+// $formData так-же содержит "uFormId" - id формы, можно сделать if($formData['uFormId'] == 'uForm_any') и в зависимости от id формы, по разному формировать письмо
+// $inputs[$formData['uFormId']] - список всех ожидаемых импутов
+
 
 // ТЕМА ПИСЬМА
 $mail_subject = 'Заголовок письма';
 
 
 // ТЕКСТ ПИСЬМА (тут формируем тело письма, на свое усмотрение)
-// $formData - полученные данные их формы в формате ['name1' => 'value1', 'name2' => 'value2']
-// $formData так-же содержит "uFormId" - id формы
-
 $mail_body = '';
-
 // перебор всех ожидаемых полей форм ($name - название поля, $formData[$name] - его значение)
 foreach ($inputs[$formData['uFormId']] as $name){
 
@@ -88,6 +88,7 @@ foreach ($inputs[$formData['uFormId']] as $name){
 
     $mail_body .= '</span><br>';
 }
+
 
 
 /**

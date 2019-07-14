@@ -263,7 +263,11 @@ function initJQ(mt) {
       $(function () {
 
         for (let uFormId in uForms) {
-          let formInstance = $('#'+uFormId);
+          let formInstance = $('#' + uFormId);
+          if(formInstance[0] === undefined){
+            delete uForms[uFormId];
+            continue;
+          }
 
           if(showLog){ console.log('uFormId, formInstance[0]'); console.log(uFormId); console.log(formInstance[0]); }
 
