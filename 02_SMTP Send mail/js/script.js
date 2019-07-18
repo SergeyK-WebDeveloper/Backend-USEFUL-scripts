@@ -1,3 +1,4 @@
+/*! uForm v2.3 */
 let showLog = !1;
 
 // method of notification after sending ('message' or 'modal')

@@ -1,4 +1,6 @@
 <?php
+/** uForm v2.3 */
+
 // uncomment on local
 //ini_set('error_reporting', E_ERROR);
 //ini_set('error_reporting', E_ALL);
