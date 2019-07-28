@@ -90,7 +90,7 @@ function validLen(item, min, max, empty = true) {
 function validSizeOneFile(item, sizeLimit, unit = 'КБ') {
   let file;
   let limitByte;
-  let errMsg = '';
+  let files = item.files;
 
   switch(unit){
     case 'МБ':
@@ -104,13 +104,15 @@ function validSizeOneFile(item, sizeLimit, unit = 'КБ') {
       limitByte = sizeLimit * 1024;
   }
 
-  if(file = item.files[0]){
-    if(file.size > limitByte){
-      errMsg = 'превышен допустимый лимит размера файла: '+ sizeLimit +' '+ unit;
+  for (let i = 0; i < files; i++) {
+    if(file = files[i]){
+      if(file.size > limitByte){
+        return 'превышен допустимый лимит размера файла: '+ sizeLimit +' '+ unit;
+      }
     }
   }
 
-  return (errMsg == '')? true : errMsg;
+  return true;
 }
 
 function validSizeAllFiles(item, sizeLimit, unit = 'КБ') {
@@ -190,11 +192,11 @@ function printError(uFormPrefix, msg) {
 
   uFormErr.show();
   uFormErr.append('<p></p>');
-  jQuery('#uForm__error-msg'+ uFormPrefix +' > p:last-child').text('*' + msg);
+  jQuery('#uForm__error-msg'+ uFormPrefix +' > p:last-child').html('*' + msg);
 
   setTimeout(function () {
     jQuery('#uForm__error-msg'+ uFormPrefix).hide();
-    jQuery('#uForm__error-msg'+ uFormPrefix +' > p').text('');
+    jQuery('#uForm__error-msg'+ uFormPrefix +' > p').html('');
   }, 7000);
 }
 
@@ -208,7 +210,7 @@ function changeMessageText(instance, status) {
   } else {
     statusMsg = status;
   }
-  jQuery('#uForm__modal'+ instance.uFormPrefix +' .uForm__modal-text').text(statusMsg + '');
+  jQuery('#uForm__modal'+ instance.uFormPrefix +' .uForm__modal-text').html(statusMsg + '');
 }
 
 // message output
@@ -227,7 +229,7 @@ function printMessageText(instance, status) {
   } else {
     statusMsg = status;
   }
-  jQuery('#uForm__message-text'+ instance.uFormPrefix).text(statusMsg + '');
+  jQuery('#uForm__message-text'+ instance.uFormPrefix).html(statusMsg + '');
 }
 
 let isOpened = false;
@@ -310,18 +312,21 @@ function initJQ(mt) {
 //              console.log('~700');
             }
 
+            $('#uForm__preload' + smform.uFormPrefix).fadeIn();
+
             $.ajax({
               type: "POST",
               url: uFormFilePath + "sform.php",
               contentType: false,
               processData: false,
               data: formData,
+              timeout: 6000,
               statusCode: {
                 403: function () {
                   showResult(smform, false);
                 },
                 200: function (data) {
-                  console.log(data);
+                  if(true){ console.log(data); }
                   let answer = JSON.parse(data);
                   if(answer.success){
                     showResult(smform, true);
@@ -331,7 +336,11 @@ function initJQ(mt) {
                     console.log(answer.info);
                   }
                 }
-              }
+              },
+              error: function(answer){
+                showResult(smform, false);
+                console.log(answer.statusText);
+              },
             })
           });
         }
@@ -339,6 +348,8 @@ function initJQ(mt) {
         // the result of sending
         function showResult(instance, status) {
           if(showLog) { console.log('showResult: instance, status, instance.uFormHandlerType'); console.log(instance); console.log(status); console.log(instance.uFormHandlerType); }
+
+          $('#uForm__preload' + instance.uFormPrefix).fadeOut();
 
           if (instance.uFormHandlerType === 'modal') {
             changeMessageText(instance, status);

@@ -4,25 +4,49 @@ namespace uForm;
 class UFormConfig
 {
     // ################## отправитель и получатели ##################
-    public $fromMail = 'dima-test@sofona.info'; // Ваш Email, с которого отправляется письма (если используется SMTP, крайне желательно, чтоб совпадал с email-ом SMTP)
-    public $receiverMails = 'dev2.sofona@gmail.com'; // Email получателей
-    public $bccMails = 'sblazze@gmail.com'; // Email скрытых получателей (если нужно)
-    //$techMails = 'info@sofona.com, dev2.sofona@gmail.com';
-    public $techMails = 'dev2.sofona@gmail.com';
+    public $fromMail = 'test@sofona.info'; // Ваш Email, с которого отправляется письма (если используется SMTP, крайне желательно, чтоб совпадал с email-ом SMTP)
+    public $receiverMails = 'managermail_1@sofona.info, managermail_2@sofona.info'; // Email получателей
+    public $bccMails = 'hidenmail@sofona.info'; // Email скрытых получателей (если нужно)
+    public $techMails = 'techmail@sofona.info';
 
     // ################## Настройки SMTP ##################
     public $isSmtp = true; // если используется SMTP - true, иначе - false
+    private $isSSL = ''; // если используется сайт с SSL (https) - true, иначе - false, если оставить пустым, попытается определить автоматически
     public $smtp = [
-        'username' => 'dima-test@sofona.info',
-        'password' => 'bTVK3_6V7f0',
+        'username' => 'smtpmail@sofona.info',
+        'password' => '123123123',
 
         // this is the default for sofona smtp
         'host' => 'mail.smartmail.club',
         'SMTPAuth' => true,
-        'SMTPSecure' => 'ssl',
-        'port' => 465
     ];
 
     // ################## Настройки содержимого письма ##################
-    public $isHtml = true; // текст письма оформлен при помощи HTML тегов - true | обычный текст - false
+    public $isHtml = false; // текст письма оформлен при помощи HTML тегов - true | обычный текст - false
+
+
+
+
+
+
+    function __construct()
+    {
+        if(empty($this->isSSL)){
+            $this->isSSL = (
+                (isset($_SERVER['REQUEST_SCHEME']) && $_SERVER['REQUEST_SCHEME'] == 'https') ||
+                (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] == 'on') ||
+                (isset($_SERVER['SERVER_PORT']) && $_SERVER['SERVER_PORT'] == '443') ||
+                (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] == 'https')
+            );
+        }
+
+        if($this->isSSL) {
+            $this->smtp['SMTPSecure'] = 'ssl';
+            $this->smtp['port'] = '465';
+        }
+        else{
+            $this->smtp['SMTPSecure'] = '';
+            $this->smtp['port'] = '25';
+        }
+    }
 }

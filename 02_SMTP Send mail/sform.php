@@ -1,15 +1,15 @@
 <?php
 /** uForm v2.3 */
 
-// uncomment on local
+// uncomment for debuging
 //ini_set('error_reporting', E_ERROR);
 //ini_set('error_reporting', E_ALL);
 //ini_set('display_errors', 1);
 //ini_set('display_startup_errors', 1);
 
-// uncomment for production
-//ini_set('error_reporting', 0);
-//ini_set('display_errors', 0);
+// comment for debuging
+ini_set('error_reporting', 0);
+ini_set('display_errors', 0);
 
 use uForm\classes\uForm;
 
@@ -18,7 +18,7 @@ require 'classes/uForm.php';
 
 // ################## получаемые данные от формы ##################
 //
-if(1) uForm::saveDumpDataForm(); // при необходимости можно сохранить дамп присылаемых данных из формы ($_POST, $_FILES)
+if(0) uForm::saveDumpDataForm(); // при необходимости можно сохранить дамп присылаемых данных из формы ($_POST, $_FILES)
 
 
 // НАСТРОЙКА ВАЛИДАЦИИ ДАННЫХ ИЗ ФОРМЫ
@@ -29,7 +29,7 @@ $inputs = [
         'email' => 'isMail', // стандартная PHP фильтр FILTER_VALIDATE_EMAIL
         'tel' => 'isPhone', // очищает телефон от лишних символов и проверяет на количество цифер (7 - 25)
         'date' => ['isDate' => ['SQL']], // ожидаемый формат даты. Доступны: 'SQL' - преобразует любой формат к тику 'Y-m-d H:i:s'; 'TIMESTAMP' - возвращает количество секунд, прошедших с начала эпохи Unix; 'ANY' - проверяет дату и в случае успеха, возвращает в таком формате как и пришло
-        'select' => '',
+        'select' => '', // поле не требующее валидации
         'multiselect' => '',
         'text-area' => ['lenStr' => [5, 250, true]], // minLen, maxLen, ture - удалять все что превышает длину/false - возвращать как ошибку
         'checkbox-1' => '',
@@ -39,13 +39,13 @@ $inputs = [
 ];
 
 
-// СПИСОК ОБЯЗАТЕЛЬНЫХ ПОЛЕЙ (файлы не проверяются)
+// СПИСОК ОБЯЗАТЕЛЬНЫХ ПОЛЕЙ (можно оставить пустым, но удалять переменную нельзя)
 $requires = [
     'uForm' => ['name', 'tel', 'email']
 ];
 
 
-// НАСТРОЙКА ВАЛИДАЦИИ ЗАГРУЖЕННЫХ ФАЙЛОВ
+// НАСТРОЙКА ВАЛИДАЦИИ ЗАГРУЖЕННЫХ ФАЙЛОВ (можно оставить пустым, но удалять переменную нельзя)
 $files = [
     'uForm' => [
         'uForm_file' => ['maxSizeOneFile' => [250]], // максимальный вес файла в KB
@@ -63,8 +63,8 @@ $files = [
 //
 $uform = null;
 $formData = getFormData($inputs, $files, $requires, $uform);
-// $formData - полученные данные их формы в формате ['name1' => 'value1', 'name2' => 'value2']
-// $formData так-же содержит "uFormId" - id формы, можно сделать if($formData['uFormId'] == 'uForm_any') и в зависимости от id формы, по разному формировать письмо
+// $formData - полученные данные из формы в формате ['name1' => 'value1', 'name2' => 'value2']
+// $formData также содержит "uFormId" - id формы, можно сделать if($formData['uFormId'] == 'uForm_any') и в зависимости от id формы, по-разному формировать письмо
 // $inputs[$formData['uFormId']] - список всех ожидаемых импутов
 
 
@@ -75,7 +75,7 @@ $mail_subject = 'Заголовок письма';
 // ТЕКСТ ПИСЬМА (тут формируем тело письма, на свое усмотрение)
 $mail_body = '';
 // перебор всех ожидаемых полей форм ($name - название поля, $formData[$name] - его значение)
-foreach ($inputs[$formData['uFormId']] as $name){
+foreach ($inputs[$formData['uFormId']] as $name => $valid){
 
     $mail_body .= '<b class="input-name">'.$name.'</b>: ';
 
