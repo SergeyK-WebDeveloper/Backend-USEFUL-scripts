@@ -3,11 +3,14 @@ namespace uForm;
 
 class UFormConfig
 {
+    // ################## Настройки содержимого письма ##################
+    public $isHtml = false; // текст письма оформлен при помощи HTML тегов - true | обычный текст - false
+
     // ################## отправитель и получатели ##################
     public $fromMail = 'test@sofona.info'; // Ваш Email, с которого отправляется письма (если используется SMTP, крайне желательно, чтоб совпадал с email-ом SMTP)
     public $receiverMails = 'managermail_1@sofona.info, managermail_2@sofona.info'; // Email получателей
-    public $bccMails = 'hidenmail@sofona.info'; // Email скрытых получателей (если нужно)
-    public $techMails = 'techmail@sofona.info';
+    public $bccMails = ''; // Email скрытых получателей (если нужно)
+    public $techMails = 'info@sofona.com';
 
     // ################## Настройки SMTP ##################
     public $isSmtp = true; // если используется SMTP - true, иначе - false
@@ -21,8 +24,7 @@ class UFormConfig
         'SMTPAuth' => true,
     ];
 
-    // ################## Настройки содержимого письма ##################
-    public $isHtml = false; // текст письма оформлен при помощи HTML тегов - true | обычный текст - false
+
 
 
 

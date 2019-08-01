@@ -19,7 +19,7 @@ require 'classes/uForm.php';
 // ################## получаемые данные от формы ##################
 //
 if(0) uForm::saveDumpDataForm(); // при необходимости можно сохранить дамп присылаемых данных из формы ($_POST, $_FILES)
-
+$customConfig = null;
 
 // НАСТРОЙКА ВАЛИДАЦИИ ДАННЫХ ИЗ ФОРМЫ
 $inputs = [
@@ -64,7 +64,8 @@ $files = [
 $uform = null;
 $formData = getFormData($inputs, $files, $requires, $uform);
 // $formData - полученные данные из формы в формате ['name1' => 'value1', 'name2' => 'value2']
-// $formData также содержит "uFormId" - id формы, можно сделать if($formData['uFormId'] == 'uForm_any') и в зависимости от id формы, по-разному формировать письмо
+// $formData также содержит "uFormId" - id формы, можно сделать if($formData['uFormId'] == 'uForm_any')
+// и в зависимости от id формы, по-разному формировать письмо или отправить почту с другим конфигами SMTP через переменную $customConfig['configParamName'] = configParamVal
 // $inputs[$formData['uFormId']] - список всех ожидаемых импутов
 
 
@@ -178,7 +179,7 @@ if(empty($uform)){
     die;
 }
 /** @var uForm $uform */
-$result = $uform->sendMail($mail_subject, $mail_body);
+$result = $uform->sendMail($mail_subject, $mail_body, $customConfig);
 //$answer = ['success' => true];
 $answerForAJAX = ['success' => $result[0], 'info' => $result[1]];
 echo json_encode($answerForAJAX);
