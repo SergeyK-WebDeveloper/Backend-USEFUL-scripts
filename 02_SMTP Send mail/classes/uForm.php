@@ -138,7 +138,7 @@ class uForm
     {
         self::$log[] = $str;
         $str = date('Y-m-d H:i:s') . ': ' . $str . PHP_EOL;
-        file_put_contents(self::$fileLog, $str, FILE_APPEND|LOCK_EX);
+        @file_put_contents(self::$fileLog, $str, FILE_APPEND|LOCK_EX);
 
         return $str;
     }
@@ -170,7 +170,7 @@ class uForm
         var_dump($_POST);
         var_dump($_FILES);
         $str = ob_get_clean();
-        file_put_contents(dirname(__DIR__) . DIRECTORY_SEPARATOR .'dump.log', $str);
+        @file_put_contents(dirname(__DIR__) . DIRECTORY_SEPARATOR .'dump.log', $str);
 
         return $str;
     }
